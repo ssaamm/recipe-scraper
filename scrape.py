@@ -13,7 +13,7 @@ Ingredient = collections.namedtuple('Ingredient', ['amount', 'name', 'cost',
 amount_re = re.compile(
 r'(.{0,10} ?(lb\.?|cups?|tbsp|tsp|oz\.?|pinch|can|cloves?) )|((\d+|½)(large|jar|package)?)',
 re.IGNORECASE)
-extra_re = re.compile('(to taste)|(, )((finely)? ?diced|sliced|stemmed and cut|minced)|(\([^0-9].*\))', re.IGNORECASE)
+extra_re = re.compile('(, )((finely)? ?diced|sliced|stemmed and cut|minced)|(\([^0-9].*\))', re.IGNORECASE)
 #extra_re = re.compile('(to taste|(, )?(finely)? ?diced)|(\(.*\))', re.IGNORECASE)
 
 cost_re = re.compile(r'\$.*$')
@@ -33,8 +33,7 @@ def ingredient_from_string(string):
                 print(x)
 
     return Ingredient(amount=string[a.start():a.end()] if a else None,
-            name=string[nst:nen]
-            .replace('*', '').strip(),
+            name=string[nst:nen].replace('*', '').replace('to taste', '').strip(),
             extra=string[e.start():e.end()] if e else None,
             cost=cost)
 
