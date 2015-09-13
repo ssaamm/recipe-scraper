@@ -1,38 +1,36 @@
 import collections
 import re
 import sys
+from nltk.stem.porter import PorterStemmer
 
 DEBUG = True
 
 Ingredient = collections.namedtuple('Ingredient', ['amount', 'name', 'cost',
 'extra'])
 
+st = PorterStemmer()
 amount_re = re.compile(
-r'(.{0,10} ?(lb\.?|cups?|tbsp|tsp|oz\.?|pinch|cloves?) )|((\d+|½|¼)(large|medium|small|jar|package)?)',
+r'[1-9½¼¾⅛]?( *(?:\(.*oz.*\))?.{0,6}\b(?:cups?|cranks?|whole|cans?|box|tsp|tbsp|pinch|inch(es)?|bunch|stalks?|large|medium|med\.?|small|lbs?\.?|oz\.?|cloves?))?',
 re.IGNORECASE)
-extra_re = re.compile('(, )((finely)? ?diced|sliced|stemmed and cut|minced)|(\([^0-9½¼].*\))', re.IGNORECASE)
-#extra_re = re.compile('(to taste|(, )?(finely)? ?diced)|(\(.*\))', re.IGNORECASE)
-
-cost_re = re.compile(r'\$.*$')
+cost_re = re.compile(r'(\$([0-9\.]*)).*$')
+prep_re = re.compile(r'(, )?(?:to taste|minced|sliced|diced|dried|grated|freshly cracked|\(optional\))', re.IGNORECASE)
 def ingredient_from_string(string):
-    a = amount_re.match(string)
-    c = cost_re.search(string)
-    e = extra_re.search(string)
+    am = amount_re.match(string)
+    amount = string[am.start():am.end()] if am else ''
 
-    nst = a.end() if a else None
-    nen = e.start() if e else c.start() if c else None
-    cost = None
-    if c:
-        try:
-            cost = float(string[c.start() + 1:c.end()].replace('*', ''))
-        except ValueError as x:
-            if DEBUG:
-                print(x)
+    cm = cost_re.search(string)
+    cost = float(cm.group(2)) if cm else None
 
-    return Ingredient(amount=string[a.start():a.end()] if a else None,
-            name=string[nst:nen].replace('*', '').replace('to taste', '').strip(),
-            extra=string[e.start():e.end()] if e else None,
-            cost=cost)
+    name_beg = None
+    name_end = None
+    if cm:
+        name_end = cm.start()
+    if am:
+        name_beg = am.end()
+    #name = stemmer.stem(prep_re.sub('', string[name_beg:name_end]).strip())
+    name = st.stem(prep_re.sub('', string[name_beg:name_end]).replace('*', '').strip())
+
+    return Ingredient(amount=amount, name=name, cost=cost, extra='')
 
 if __name__ == '__main__':
     ingredients = []
